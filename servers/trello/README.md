@@ -96,7 +96,7 @@ dist/src/index.js
 Working directory:
 
 ```text
-/Users/michaelhuskey/Code/custom-mcp-servers/servers/trello
+/path/to/custom-mcp-servers/servers/trello
 ```
 
 Environment variable passthrough:

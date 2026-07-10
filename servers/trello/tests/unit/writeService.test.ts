@@ -5,7 +5,10 @@ import {
   WriteService
 } from "../../src/services/writeService.js";
 import type { TrelloCard, TrelloCustomFieldDefinition } from "../../src/types/trello.js";
-import { NotFoundError } from "../../src/utils/errors.js";
+import {
+  MutationVerificationError,
+  NotFoundError
+} from "../../src/utils/errors.js";
 
 const baseCard: TrelloCard = {
   id: "card-1",
@@ -29,7 +32,7 @@ const refreshedCard = {
   description: null,
   dueDate: null,
   dueComplete: false,
-  labels: [],
+  labels: [{ id: "label-1", name: "AI Reviewed", color: "blue" }],
   customFields: [],
   checklists: [],
   attachments: [],
@@ -45,6 +48,9 @@ function makeService(card: TrelloCard = baseCard) {
     updateCardDescription: vi.fn(),
     updateCardCustomField: vi.fn(),
     clearCardCustomField: vi.fn(),
+    getBoardLabels: vi.fn(async () => [
+      { id: "label-1", name: "AI Reviewed", color: "blue" }
+    ]),
     addCardLabel: vi.fn(),
     removeCardLabel: vi.fn()
   };
@@ -79,6 +85,25 @@ describe("WriteService board guard", () => {
     await expect(service.addLabel("card-1", "label-1")).resolves.toEqual(refreshedCard);
     expect(client.addCardLabel).toHaveBeenCalledWith("card-1", "label-1");
     expect(cardService.getCardDetails).toHaveBeenCalledWith("card-1");
+  });
+
+  it("rejects label IDs that do not belong to the configured board", async () => {
+    const { client, cardService, service } = makeService();
+
+    await expect(service.addLabel("card-1", "missing-label")).rejects.toMatchObject({
+      code: "TRELLO_LABEL_NOT_FOUND"
+    });
+    expect(client.addCardLabel).not.toHaveBeenCalled();
+    expect(cardService.getCardDetails).not.toHaveBeenCalled();
+  });
+
+  it("reports a silent Trello no-op as a mutation verification error", async () => {
+    const { cardService, service } = makeService();
+    cardService.getCardDetails.mockResolvedValueOnce({ ...refreshedCard, labels: [] });
+
+    await expect(service.addLabel("card-1", "label-1")).rejects.toThrow(
+      MutationVerificationError
+    );
   });
 });
 

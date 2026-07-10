@@ -30,6 +30,13 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class MutationVerificationError extends AppError {
+  constructor(message: string) {
+    super(message, "TRELLO_MUTATION_NOT_APPLIED", 502);
+    this.name = "MutationVerificationError";
+  }
+}
+
 export function toPublicError(error: unknown): { code: string; message: string } {
   if (error instanceof AppError) {
     return {

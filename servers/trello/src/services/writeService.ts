@@ -2,7 +2,7 @@ import type { TrelloClient, TrelloCustomFieldUpdatePayload } from "../clients/tr
 import type { BoardService } from "./boardService.js";
 import type { CardService } from "./cardService.js";
 import type { NormalizedCard, TrelloCustomFieldDefinition } from "../types/trello.js";
-import { NotFoundError } from "../utils/errors.js";
+import { MutationVerificationError, NotFoundError } from "../utils/errors.js";
 
 export type CustomFieldUpdateValue =
   | string
@@ -56,8 +56,17 @@ export class WriteService {
 
   async addLabel(cardId: string, labelId: string): Promise<NormalizedCard> {
     await this.assertCardOnConfiguredBoard(cardId);
+    await this.assertLabelOnConfiguredBoard(labelId);
     await this.client.addCardLabel(cardId, labelId);
-    return this.cardService.getCardDetails(cardId);
+    const refreshedCard = await this.cardService.getCardDetails(cardId);
+
+    if (!refreshedCard.labels.some((label) => label.id === labelId)) {
+      throw new MutationVerificationError(
+        "Trello reported success, but the requested label was not present on the refreshed card."
+      );
+    }
+
+    return refreshedCard;
   }
 
   async removeLabel(cardId: string, labelId: string): Promise<NormalizedCard> {
@@ -91,6 +100,17 @@ export class WriteService {
     }
 
     return definition;
+  }
+
+  private async assertLabelOnConfiguredBoard(labelId: string): Promise<void> {
+    const labels = await this.client.getBoardLabels(this.boardId);
+
+    if (!labels.some((label) => label.id === labelId)) {
+      throw new NotFoundError(
+        "The requested Trello label was not found on the configured board.",
+        "TRELLO_LABEL_NOT_FOUND"
+      );
+    }
   }
 }
 

@@ -64,6 +64,35 @@ describe("TrelloClient write requests", () => {
     expect(init).toMatchObject({ method: "POST" });
   });
 
+  it("constructs create checklist requests", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(JSON.stringify({ id: "checklist-1", name: "Steps", checkItems: [] }))
+    );
+    const client = clientWithFetch(fetchImpl);
+
+    await client.createCardChecklist("card 1", "Steps");
+
+    const [url, init] = firstFetchCall(fetchImpl);
+    expect(String(url)).toContain("/cards/card%201/checklists");
+    expect(new URL(String(url)).searchParams.get("name")).toBe("Steps");
+    expect(init).toMatchObject({ method: "POST" });
+  });
+
+  it("constructs add checklist item requests", async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ id: "item-1", name: "First step", state: "incomplete" }))
+    );
+    const client = clientWithFetch(fetchImpl);
+
+    await client.addChecklistItem("checklist 1", "First step");
+
+    const [url, init] = firstFetchCall(fetchImpl);
+    expect(String(url)).toContain("/checklists/checklist%201/checkItems");
+    expect(new URL(String(url)).searchParams.get("name")).toBe("First step");
+    expect(init).toMatchObject({ method: "POST" });
+  });
+
   it("constructs description update requests", async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ id: "card-1" })));
     const client = clientWithFetch(fetchImpl);

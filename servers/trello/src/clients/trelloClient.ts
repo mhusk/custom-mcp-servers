@@ -1,6 +1,8 @@
 import type {
   TrelloBoard,
   TrelloCard,
+  TrelloCheckItem,
+  TrelloChecklist,
   TrelloCommentAction,
   TrelloCustomFieldDefinition,
   TrelloLabel,
@@ -20,8 +22,7 @@ type QueryValue = string | number | boolean | null | undefined;
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 export type TrelloCustomFieldUpdatePayload =
-  | { value: Partial<Record<"text" | "number" | "checked" | "date", string>> }
-  | { idValue: string };
+  { value: Partial<Record<"text" | "number" | "checked" | "date", string>> } | { idValue: string };
 
 export class TrelloClient {
   private readonly timeoutMs: number;
@@ -98,6 +99,22 @@ export class TrelloClient {
       {
         text
       },
+      { method: "POST" }
+    );
+  }
+
+  async createCardChecklist(cardId: string, name: string): Promise<TrelloChecklist> {
+    return this.request<TrelloChecklist>(
+      `/cards/${encodeURIComponent(cardId)}/checklists`,
+      { name },
+      { method: "POST" }
+    );
+  }
+
+  async addChecklistItem(checklistId: string, name: string): Promise<TrelloCheckItem> {
+    return this.request<TrelloCheckItem>(
+      `/checklists/${encodeURIComponent(checklistId)}/checkItems`,
+      { name },
       { method: "POST" }
     );
   }

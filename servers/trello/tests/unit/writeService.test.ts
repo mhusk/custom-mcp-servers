@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  toCustomFieldUpdatePayload,
-  WriteService
-} from "../../src/services/writeService.js";
-import type { TrelloCard, TrelloCustomFieldDefinition } from "../../src/types/trello.js";
-import {
-  MutationVerificationError,
-  NotFoundError
-} from "../../src/utils/errors.js";
+import { toCustomFieldUpdatePayload, WriteService } from "../../src/services/writeService.js";
+import type {
+  NormalizedCard,
+  TrelloCard,
+  TrelloCustomFieldDefinition
+} from "../../src/types/trello.js";
+import { MutationVerificationError, NotFoundError } from "../../src/utils/errors.js";
 
 const baseCard: TrelloCard = {
   id: "card-1",
@@ -23,7 +21,7 @@ const baseCard: TrelloCard = {
   pos: 1
 };
 
-const refreshedCard = {
+const refreshedCard: NormalizedCard = {
   id: "card-1",
   title: "Build thing",
   url: "https://example.com",
@@ -45,12 +43,20 @@ function makeService(card: TrelloCard = baseCard) {
   const client = {
     getCard: vi.fn(async () => card),
     addCardComment: vi.fn(),
+    createCardChecklist: vi.fn(async () => ({
+      id: "checklist-1",
+      name: "Steps",
+      checkItems: []
+    })),
+    addChecklistItem: vi.fn(async () => ({
+      id: "item-1",
+      name: "First step",
+      state: "incomplete"
+    })),
     updateCardDescription: vi.fn(),
     updateCardCustomField: vi.fn(),
     clearCardCustomField: vi.fn(),
-    getBoardLabels: vi.fn(async () => [
-      { id: "label-1", name: "AI Reviewed", color: "blue" }
-    ]),
+    getBoardLabels: vi.fn(async () => [{ id: "label-1", name: "AI Reviewed", color: "blue" }]),
     addCardLabel: vi.fn(),
     removeCardLabel: vi.fn()
   };
@@ -67,7 +73,12 @@ function makeService(card: TrelloCard = baseCard) {
     client,
     boardService,
     cardService,
-    service: new WriteService(client as never, boardService as never, cardService as never, "main-board")
+    service: new WriteService(
+      client as never,
+      boardService as never,
+      cardService as never,
+      "main-board"
+    )
   };
 }
 
@@ -76,7 +87,13 @@ describe("WriteService board guard", () => {
     const { client, service } = makeService({ ...baseCard, idBoard: "other-board" });
 
     await expect(service.addComment("card-1", "Hello")).rejects.toThrow(NotFoundError);
+    await expect(service.createChecklist("card-1", "Steps")).rejects.toThrow(NotFoundError);
+    await expect(service.addChecklistItem("card-1", "checklist-1", "First step")).rejects.toThrow(
+      NotFoundError
+    );
     expect(client.addCardComment).not.toHaveBeenCalled();
+    expect(client.createCardChecklist).not.toHaveBeenCalled();
+    expect(client.addChecklistItem).not.toHaveBeenCalled();
   });
 
   it("returns the refreshed normalized card after a mutation", async () => {
@@ -101,9 +118,67 @@ describe("WriteService board guard", () => {
     const { cardService, service } = makeService();
     cardService.getCardDetails.mockResolvedValueOnce({ ...refreshedCard, labels: [] });
 
-    await expect(service.addLabel("card-1", "label-1")).rejects.toThrow(
-      MutationVerificationError
+    await expect(service.addLabel("card-1", "label-1")).rejects.toThrow(MutationVerificationError);
+  });
+
+  it("creates a checklist and returns the refreshed normalized card", async () => {
+    const { client, cardService, service } = makeService();
+    const cardWithChecklist = {
+      ...refreshedCard,
+      checklists: [{ id: "checklist-1", name: "Steps", items: [] }]
+    };
+    cardService.getCardDetails.mockResolvedValueOnce(cardWithChecklist);
+
+    await expect(service.createChecklist("card-1", "Steps")).resolves.toEqual(cardWithChecklist);
+    expect(client.createCardChecklist).toHaveBeenCalledWith("card-1", "Steps");
+  });
+
+  it("only adds items to a checklist on the guarded card", async () => {
+    const { client, cardService, service } = makeService({
+      ...baseCard,
+      checklists: [{ id: "checklist-1", name: "Steps", checkItems: [] }]
+    });
+    const cardWithItem = {
+      ...refreshedCard,
+      checklists: [
+        {
+          id: "checklist-1",
+          name: "Steps",
+          items: [
+            {
+              id: "item-1",
+              name: "First step",
+              complete: false,
+              dueDate: null
+            }
+          ]
+        }
+      ]
+    };
+    cardService.getCardDetails.mockResolvedValueOnce(cardWithItem);
+
+    await expect(service.addChecklistItem("card-1", "checklist-1", "First step")).resolves.toEqual(
+      cardWithItem
     );
+    expect(client.addChecklistItem).toHaveBeenCalledWith("checklist-1", "First step");
+  });
+
+  it("rejects checklist IDs that do not belong to the guarded card", async () => {
+    const { client, cardService, service } = makeService();
+
+    await expect(
+      service.addChecklistItem("card-1", "other-checklist", "First step")
+    ).rejects.toMatchObject({ code: "TRELLO_CHECKLIST_NOT_FOUND" });
+    expect(client.addChecklistItem).not.toHaveBeenCalled();
+    expect(cardService.getCardDetails).not.toHaveBeenCalled();
+  });
+
+  it("does not add a comment when a checklist write fails", async () => {
+    const { client, service } = makeService();
+    client.createCardChecklist.mockRejectedValueOnce(new Error("write failed"));
+
+    await expect(service.createChecklist("card-1", "Steps")).rejects.toThrow("write failed");
+    expect(client.addCardComment).not.toHaveBeenCalled();
   });
 });
 

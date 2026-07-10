@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   addCardCommentSchema,
   addCardLabelSchema,
+  addChecklistItemSchema,
+  createCardChecklistSchema,
   removeCardLabelSchema,
   updateCardCustomFieldSchema,
   updateCardDescriptionSchema
@@ -23,6 +25,24 @@ describe("write tool schemas", () => {
 
   it("rejects empty comment text", () => {
     expect(() => addCardCommentSchema.parse({ cardId: "card-1", text: "" })).toThrow();
+  });
+
+  it("rejects empty checklist names and IDs", () => {
+    expect(() => createCardChecklistSchema.parse({ cardId: "card-1", name: "" })).toThrow();
+    expect(() =>
+      addChecklistItemSchema.parse({
+        cardId: "card-1",
+        checklistId: "",
+        name: "First step"
+      })
+    ).toThrow();
+    expect(() =>
+      addChecklistItemSchema.parse({
+        cardId: "card-1",
+        checklistId: "checklist-1",
+        name: ""
+      })
+    ).toThrow();
   });
 
   it("rejects invalid custom field values", () => {

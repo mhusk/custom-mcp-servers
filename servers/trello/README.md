@@ -6,7 +6,7 @@ Local MCP server for one configured Trello board. It gives Codex, or another MCP
 
 This server focuses on the primary board configured by `TRELLO_MAIN_BOARD_ID`, especially the `Back-Log` and `To-Do` lists. It can read board metadata, lists, labels, custom fields, cards, checklists, checklist item due dates, due dates, comments, and attachments.
 
-It can also add card comments, replace card descriptions, update or clear custom fields, and add or remove labels by ID. It intentionally does not include card creation, moves, archives, checklist mutation, due-date mutation, or generic Trello API tools.
+It can also create card checklists, add checklist items, add card comments, replace card descriptions, update or clear custom fields, and add or remove labels by ID. It intentionally does not include card creation, moves, archives, checklist deletion or completion, due-date mutation, or generic Trello API tools.
 
 ## Security And Scope Guarantees
 
@@ -15,7 +15,7 @@ It can also add card comments, replace card descriptions, update or clear custom
 - Credentials are not logged, committed, or shown in README examples.
 - `.env` is ignored by git.
 - Card details and writes are allowed only after validating the card belongs to the configured board.
-- Write tools are limited to comments, descriptions, custom fields, and labels.
+- Write tools are limited to checklist creation and item addition, comments, descriptions, custom fields, and labels.
 - There is no arbitrary Trello request tool.
 
 ## Prerequisites
@@ -215,6 +215,33 @@ Input:
 Uses deterministic local rules only. It flags missing or short descriptions, vague titles, missing title action verbs, multi-step descriptions without checklists, empty custom fields, and missing due dates. Missing due dates are informational because backlog items often do not need dates.
 
 Completeness score starts at 100. Each warning subtracts 15 points and each info issue subtracts 5 points, clamped between 0 and 100.
+
+### `create_card_checklist`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "name": "Implementation steps"
+}
+```
+
+Creates a checklist on a card on the configured board and returns the refreshed normalized card.
+
+### `add_checklist_item`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "checklistId": "trello_checklist_id",
+  "name": "Add tests"
+}
+```
+
+Adds an item to a checklist that belongs to the specified card on the configured board and returns the refreshed normalized card. Checklist and comment writes are independent. If a checklist write fails, retain the tool failure and only add a summary comment if it accurately states that the checklist change was not completed.
 
 ### `add_card_comment`
 

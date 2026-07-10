@@ -11,6 +11,17 @@ export const addCardCommentSchema = z.object({
   text: z.string().trim().min(1)
 });
 
+export const createCardChecklistSchema = z.object({
+  cardId: idSchema,
+  name: z.string().trim().min(1)
+});
+
+export const addChecklistItemSchema = z.object({
+  cardId: idSchema,
+  checklistId: idSchema,
+  name: z.string().trim().min(1)
+});
+
 export const updateCardDescriptionSchema = z.object({
   cardId: idSchema,
   description: z.string()
@@ -43,6 +54,36 @@ export const removeCardLabelSchema = z.object({
 });
 
 export function registerWriteTools(server: McpServer, writeService: WriteService): void {
+  server.registerTool(
+    "create_card_checklist",
+    {
+      title: "Create Trello card checklist",
+      description:
+        "Write. Creates a checklist on a card on the configured Trello board and returns the refreshed normalized card. This write is independent of comment writes; if it fails, report that the checklist was not created before posting any summary comment.",
+      inputSchema: createCardChecklistSchema.shape
+    },
+    async (input) =>
+      safeTool(async () => {
+        const args = createCardChecklistSchema.parse(input);
+        return writeService.createChecklist(args.cardId, args.name);
+      })
+  );
+
+  server.registerTool(
+    "add_checklist_item",
+    {
+      title: "Add Trello checklist item",
+      description:
+        "Write. Adds an item to a checklist on the specified card on the configured Trello board and returns the refreshed normalized card. This write is independent of comment writes; if it fails, report that the checklist item was not added before posting any summary comment.",
+      inputSchema: addChecklistItemSchema.shape
+    },
+    async (input) =>
+      safeTool(async () => {
+        const args = addChecklistItemSchema.parse(input);
+        return writeService.addChecklistItem(args.cardId, args.checklistId, args.name);
+      })
+  );
+
   server.registerTool(
     "add_card_comment",
     {

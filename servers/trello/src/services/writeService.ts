@@ -27,6 +27,49 @@ export class WriteService {
     return this.cardService.getCardDetails(cardId);
   }
 
+  async createChecklist(cardId: string, name: string): Promise<NormalizedCard> {
+    await this.assertCardOnConfiguredBoard(cardId);
+    const checklist = await this.client.createCardChecklist(cardId, name);
+    const refreshedCard = await this.cardService.getCardDetails(cardId);
+
+    if (!refreshedCard.checklists.some((candidate) => candidate.id === checklist.id)) {
+      throw new MutationVerificationError(
+        "Trello reported success, but the new checklist was not present on the refreshed card."
+      );
+    }
+
+    return refreshedCard;
+  }
+
+  async addChecklistItem(
+    cardId: string,
+    checklistId: string,
+    name: string
+  ): Promise<NormalizedCard> {
+    const card = await this.getCardOnConfiguredBoard(cardId);
+
+    if (!card.checklists?.some((checklist) => checklist.id === checklistId)) {
+      throw new NotFoundError(
+        "The requested Trello checklist was not found on the specified card.",
+        "TRELLO_CHECKLIST_NOT_FOUND"
+      );
+    }
+
+    const item = await this.client.addChecklistItem(checklistId, name);
+    const refreshedCard = await this.cardService.getCardDetails(cardId);
+    const refreshedChecklist = refreshedCard.checklists.find(
+      (checklist) => checklist.id === checklistId
+    );
+
+    if (!refreshedChecklist?.items.some((candidate) => candidate.id === item.id)) {
+      throw new MutationVerificationError(
+        "Trello reported success, but the new checklist item was not present on the refreshed card."
+      );
+    }
+
+    return refreshedCard;
+  }
+
   async updateDescription(cardId: string, description: string): Promise<NormalizedCard> {
     await this.assertCardOnConfiguredBoard(cardId);
     await this.client.updateCardDescription(cardId, description);
@@ -76,6 +119,10 @@ export class WriteService {
   }
 
   private async assertCardOnConfiguredBoard(cardId: string): Promise<void> {
+    await this.getCardOnConfiguredBoard(cardId);
+  }
+
+  private async getCardOnConfiguredBoard(cardId: string) {
     const card = await this.client.getCard(cardId, { includeAttachments: false });
 
     if (card.idBoard !== this.boardId) {
@@ -84,6 +131,8 @@ export class WriteService {
         "TRELLO_CARD_WRONG_BOARD"
       );
     }
+
+    return card;
   }
 
   private async getCustomFieldDefinition(

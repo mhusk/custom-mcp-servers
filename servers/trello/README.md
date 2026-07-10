@@ -1,21 +1,21 @@
 # Trello MCP Server
 
-Read-only local MCP server for one configured Trello board. Version 1 is designed to give Codex, or another MCP-capable AI assistant, reliable visibility into a personal work queue without allowing any Trello mutations.
+Local MCP server for one configured Trello board. It gives Codex, or another MCP-capable AI assistant, reliable visibility into a personal work queue and exposes a small set of scoped card mutations.
 
-## Version 1 Scope
+## Scope
 
 This server focuses on the primary board configured by `TRELLO_MAIN_BOARD_ID`, especially the `Back-Log` and `To-Do` lists. It can read board metadata, lists, labels, custom fields, cards, checklists, checklist item due dates, due dates, comments, and attachments.
 
-It intentionally does not include create, update, move, archive, delete, comment-writing, checklist mutation, or generic Trello API tools.
+It can also add card comments, replace card descriptions, update or clear custom fields, and add or remove labels by ID. It intentionally does not include card creation, moves, archives, checklist mutation, due-date mutation, or generic Trello API tools.
 
-## Security And Read-Only Guarantees
+## Security And Scope Guarantees
 
-- Only `GET` requests are implemented in the Trello client.
 - Trello credentials are read from environment variables only.
 - Credentials are never accepted through MCP tool arguments.
 - Credentials are not logged, committed, or shown in README examples.
 - `.env` is ignored by git.
-- Card details are returned only after validating the card belongs to the configured board.
+- Card details and writes are allowed only after validating the card belongs to the configured board.
+- Write tools are limited to comments, descriptions, custom fields, and labels.
 - There is no arbitrary Trello request tool.
 
 ## Prerequisites
@@ -216,6 +216,72 @@ Uses deterministic local rules only. It flags missing or short descriptions, vag
 
 Completeness score starts at 100. Each warning subtracts 15 points and each info issue subtracts 5 points, clamped between 0 and 100.
 
+### `add_card_comment`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "text": "Comment text"
+}
+```
+
+Adds a comment to a card on the configured board and returns the refreshed normalized card.
+
+### `update_card_description`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "description": "New card description"
+}
+```
+
+Replaces a card description on the configured board and returns the refreshed normalized card. Use an empty string to clear the description.
+
+### `update_card_custom_field`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "customFieldId": "custom_field_id",
+  "value": "Ready"
+}
+```
+
+Updates a custom field on a card on the configured board and returns the refreshed normalized card. Supported values are strings, numbers, booleans, `null`, or `{ "idValue": "option_id" }` for list-option custom fields. Use `null` to clear a custom field.
+
+### `add_card_label`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "labelId": "label_id"
+}
+```
+
+Adds a label by label ID to a card on the configured board and returns the refreshed normalized card.
+
+### `remove_card_label`
+
+Input:
+
+```json
+{
+  "cardId": "trello_card_id",
+  "labelId": "label_id"
+}
+```
+
+Removes a label by label ID from a card on the configured board and returns the refreshed normalized card.
+
 ## Example Codex Questions
 
 - "What should I work on next from Trello?"
@@ -223,6 +289,8 @@ Completeness score starts at 100. Each warning subtracts 15 points and each info
 - "Which To-Do cards are underdefined?"
 - "Search Trello for cards about invoices."
 - "Open the details for this Trello card ID."
+- "Add a comment to this Trello card."
+- "Set this Trello card's priority custom field."
 
 ## Testing
 
@@ -250,4 +318,4 @@ Unit tests mock network requests. Integration tests are read-only and run only w
 - Optional label and custom-field filters.
 - Richer recurring-card insight for `Repeat Cards`.
 - Template-card discovery for planning workflows.
-- Additional read-only sources mapped into the generic `WorkItem` abstraction.
+- Additional sources mapped into the generic `WorkItem` abstraction.

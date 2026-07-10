@@ -1,7 +1,7 @@
 {
   "name": "@custom-mcp/trello",
   "version": "0.1.0",
-  "description": "Read-only Trello MCP server for one configured board.",
+  "description": "Scoped read/write Trello MCP server for one configured board.",
   "type": "module",
   "main": "dist/src/index.js",
   "engines": {

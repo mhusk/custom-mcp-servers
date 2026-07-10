@@ -17,6 +17,11 @@ export type TrelloClientOptions = {
 };
 
 type QueryValue = string | number | boolean | null | undefined;
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+export type TrelloCustomFieldUpdatePayload =
+  | { value: Partial<Record<"text" | "number" | "checked" | "date", string>> }
+  | { idValue: string };
 
 export class TrelloClient {
   private readonly timeoutMs: number;
@@ -87,25 +92,90 @@ export class TrelloClient {
     });
   }
 
-  private async request<T>(path: string, query: Record<string, QueryValue> = {}): Promise<T> {
+  async addCardComment(cardId: string, text: string): Promise<TrelloCommentAction> {
+    return this.request<TrelloCommentAction>(
+      `/cards/${encodeURIComponent(cardId)}/actions/comments`,
+      {
+        text
+      },
+      { method: "POST" }
+    );
+  }
+
+  async updateCardDescription(cardId: string, description: string): Promise<TrelloCard> {
+    return this.request<TrelloCard>(
+      `/cards/${encodeURIComponent(cardId)}`,
+      {
+        desc: description
+      },
+      { method: "PUT" }
+    );
+  }
+
+  async updateCardCustomField(
+    cardId: string,
+    customFieldId: string,
+    payload: TrelloCustomFieldUpdatePayload
+  ): Promise<unknown> {
+    return this.request<unknown>(
+      `/cards/${encodeURIComponent(cardId)}/customField/${encodeURIComponent(customFieldId)}/item`,
+      {},
+      { method: "PUT", body: payload }
+    );
+  }
+
+  async clearCardCustomField(cardId: string, customFieldId: string): Promise<unknown> {
+    return this.request<unknown>(
+      `/cards/${encodeURIComponent(cardId)}/customField/${encodeURIComponent(customFieldId)}/item`,
+      {},
+      { method: "DELETE" }
+    );
+  }
+
+  async addCardLabel(cardId: string, labelId: string): Promise<unknown> {
+    return this.request<unknown>(
+      `/cards/${encodeURIComponent(cardId)}/idLabels`,
+      {
+        value: labelId
+      },
+      { method: "POST" }
+    );
+  }
+
+  async removeCardLabel(cardId: string, labelId: string): Promise<unknown> {
+    return this.request<unknown>(
+      `/cards/${encodeURIComponent(cardId)}/idLabels/${encodeURIComponent(labelId)}`,
+      {},
+      { method: "DELETE" }
+    );
+  }
+
+  private async request<T>(
+    path: string,
+    query: Record<string, QueryValue> = {},
+    options: { method?: HttpMethod; body?: unknown } = {}
+  ): Promise<T> {
     const url = this.buildUrl(path, query);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    const method = options.method ?? "GET";
 
     try {
       const response = await this.fetchImpl(url, {
-        method: "GET",
+        method,
         signal: controller.signal,
         headers: {
-          Accept: "application/json"
-        }
+          Accept: "application/json",
+          ...(options.body === undefined ? {} : { "Content-Type": "application/json" })
+        },
+        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
       });
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
 
-      return (await response.json()) as T;
+      return (await parseJsonResponse(response)) as T;
     } catch (error) {
       if (error instanceof TrelloApiError) {
         throw error;
@@ -187,4 +257,13 @@ async function safeReadBody(response: Response): Promise<string | null> {
 
 function redactSecrets(value: string): string {
   return value.replace(/([?&](?:key|token)=)[^&\s]+/gi, "$1[redacted]");
+}
+
+async function parseJsonResponse(response: Response): Promise<unknown> {
+  if (response.status === 204) {
+    return null;
+  }
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }

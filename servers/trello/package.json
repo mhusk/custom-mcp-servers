@@ -1,0 +1,35 @@
+{
+  "name": "@custom-mcp/trello",
+  "version": "0.1.0",
+  "description": "Read-only Trello MCP server for one configured board.",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run tests/unit",
+    "test:watch": "vitest tests/unit",
+    "test:integration": "vitest run tests/integration"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "@types/node": "^22.13.14",
+    "eslint": "^9.31.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.37.0",
+    "vitest": "^3.2.4"
+  }
+}

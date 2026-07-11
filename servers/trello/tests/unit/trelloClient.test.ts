@@ -49,6 +49,15 @@ describe("TrelloClient API error mapping", () => {
       ).getBoard("board")
     ).rejects.toThrow(TrelloApiError);
   });
+
+  it("maps malformed JSON responses", async () => {
+    await expect(
+      clientWithResponse(new Response("not-json")).getBoard("board")
+    ).rejects.toMatchObject({
+      code: "TRELLO_INVALID_RESPONSE",
+      statusCode: 502
+    });
+  });
 });
 
 describe("TrelloClient write requests", () => {

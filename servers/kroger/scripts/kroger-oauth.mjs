@@ -66,7 +66,9 @@ async function requestToken(params) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`Kroger token request failed (${response.status}): ${body.error_description ?? body.error ?? "unknown error"}`);
+    throw new Error(
+      `Kroger token request failed (${response.status}): ${body.error_description ?? body.error ?? "unknown error"}`
+    );
   }
   return body;
 }
@@ -84,11 +86,19 @@ function printToken(token) {
 
 async function getAuthorizationCode(redirectUri, expectedState) {
   const redirect = new URL(redirectUri);
-  if (!/^https?:$/.test(redirect.protocol) || !["localhost", "127.0.0.1", "::1"].includes(redirect.hostname)) {
-    throw new Error("Automatic callback requires KROGER_REDIRECT_URI to use localhost, 127.0.0.1, or ::1. Register a local callback URL such as http://127.0.0.1:3000/callback.");
+  if (
+    !/^https?:$/.test(redirect.protocol) ||
+    !["localhost", "127.0.0.1", "::1"].includes(redirect.hostname)
+  ) {
+    throw new Error(
+      "Automatic callback requires KROGER_REDIRECT_URI to use localhost, 127.0.0.1, or ::1. Register a local callback URL such as http://127.0.0.1:3000/callback."
+    );
   }
   const port = Number(redirect.port || (redirect.protocol === "https:" ? 443 : 80));
-  if (redirect.protocol !== "http:") throw new Error("Use an http localhost redirect URI; this helper does not run a local HTTPS server.");
+  if (redirect.protocol !== "http:")
+    throw new Error(
+      "Use an http localhost redirect URI; this helper does not run a local HTTPS server."
+    );
 
   return new Promise((resolve, reject) => {
     const server = http.createServer((request, response) => {
@@ -106,7 +116,11 @@ async function getAuthorizationCode(redirectUri, expectedState) {
       const error = callback.searchParams.get("error");
       const code = callback.searchParams.get("code");
       response.writeHead(error || !code ? 400 : 200, { "Content-Type": "text/plain" });
-      response.end(error || !code ? `Authorization failed: ${error ?? "no code returned"}. You may close this window.` : "Authorization complete. You may close this window and return to the terminal.");
+      response.end(
+        error || !code
+          ? `Authorization failed: ${error ?? "no code returned"}. You may close this window.`
+          : "Authorization complete. You may close this window and return to the terminal."
+      );
       server.close();
       if (error || !code) {
         reject(new Error(`Authorization failed: ${error ?? "no code returned"}`));
@@ -115,7 +129,9 @@ async function getAuthorizationCode(redirectUri, expectedState) {
       }
     });
     server.once("error", reject);
-    server.listen(port, redirect.hostname, () => console.log(`\nWaiting for Kroger's redirect at ${redirectUri} ...`));
+    server.listen(port, redirect.hostname, () =>
+      console.log(`\nWaiting for Kroger's redirect at ${redirectUri} ...`)
+    );
   });
 }
 
@@ -134,11 +150,18 @@ async function authorize() {
   console.log("Open this URL in a browser and sign in to Kroger:\n");
   console.log(authorizationUrl.toString());
   const code = await getAuthorizationCode(redirectUri, state);
-  printToken(await requestToken({ grant_type: "authorization_code", code, redirect_uri: redirectUri }));
+  printToken(
+    await requestToken({ grant_type: "authorization_code", code, redirect_uri: redirectUri })
+  );
 }
 
 async function refresh() {
-  printToken(await requestToken({ grant_type: "refresh_token", refresh_token: requireEnv("KROGER_REFRESH_TOKEN") }));
+  printToken(
+    await requestToken({
+      grant_type: "refresh_token",
+      refresh_token: requireEnv("KROGER_REFRESH_TOKEN")
+    })
+  );
 }
 
 loadEnvFile();

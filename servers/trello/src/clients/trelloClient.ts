@@ -282,5 +282,13 @@ async function parseJsonResponse(response: Response): Promise<unknown> {
   }
 
   const text = await response.text();
-  return text ? JSON.parse(text) : null;
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new TrelloApiError("Trello API returned malformed JSON.", "TRELLO_INVALID_RESPONSE", 502);
+  }
 }

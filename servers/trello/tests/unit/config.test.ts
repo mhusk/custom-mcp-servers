@@ -22,4 +22,15 @@ describe("loadConfig", () => {
       trelloApiBaseUrl: "https://api.trello.com/1"
     });
   });
+
+  it("removes trailing slashes from a custom Trello API base URL", () => {
+    const config = loadConfig({
+      TRELLO_API_KEY: "key",
+      TRELLO_TOKEN: "token",
+      TRELLO_MAIN_BOARD_ID: "board",
+      TRELLO_API_BASE_URL: "https://api.trello.test/1///"
+    });
+
+    expect(config.trelloApiBaseUrl).toBe("https://api.trello.test/1");
+  });
 });

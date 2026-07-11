@@ -28,6 +28,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     trelloApiKey: parsed.data.TRELLO_API_KEY,
     trelloToken: parsed.data.TRELLO_TOKEN,
     trelloMainBoardId: parsed.data.TRELLO_MAIN_BOARD_ID,
-    trelloApiBaseUrl: parsed.data.TRELLO_API_BASE_URL.replace(/\/$/, "")
+    trelloApiBaseUrl: parsed.data.TRELLO_API_BASE_URL.replace(/\/+$/, "")
   };
 }

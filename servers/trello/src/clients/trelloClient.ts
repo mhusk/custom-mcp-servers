@@ -65,7 +65,7 @@ export class TrelloClient {
   ): Promise<TrelloCard[]> {
     return this.request<TrelloCard[]>(`/lists/${encodeURIComponent(listId)}/cards`, {
       filter: "open",
-      fields: "id,idBoard,idList,name,desc,url,due,dueComplete,dateLastActivity,pos,closed",
+      fields: "id,idBoard,idList,name,desc,url,due,dueComplete,labels,dateLastActivity,pos,closed",
       labels: "all",
       checklists: "all",
       customFieldItems: true,
@@ -75,7 +75,7 @@ export class TrelloClient {
 
   async getCard(cardId: string, options: { includeAttachments: boolean }): Promise<TrelloCard> {
     return this.request<TrelloCard>(`/cards/${encodeURIComponent(cardId)}`, {
-      fields: "id,idBoard,idList,name,desc,url,due,dueComplete,dateLastActivity,pos,closed",
+      fields: "id,idBoard,idList,name,desc,url,due,dueComplete,labels,dateLastActivity,pos,closed",
       labels: "all",
       checklists: "all",
       customFieldItems: true,

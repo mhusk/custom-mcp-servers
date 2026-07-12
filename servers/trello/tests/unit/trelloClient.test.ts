@@ -162,3 +162,26 @@ describe("TrelloClient write requests", () => {
     expect(init).toMatchObject({ method: "DELETE" });
   });
 });
+
+describe("TrelloClient card reads", () => {
+  it("includes labels in the explicit card fields allowlist", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ id: "card-1" })));
+    const client = clientWithFetch(fetchImpl);
+
+    await client.getCard("card-1", { includeAttachments: false });
+
+    const [url] = firstFetchCall(fetchImpl);
+    expect(new URL(String(url)).searchParams.get("fields")?.split(",")).toContain("labels");
+    expect(new URL(String(url)).searchParams.get("labels")).toBe("all");
+  });
+
+  it("includes labels when reading cards from a list", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify([])));
+    const client = clientWithFetch(fetchImpl);
+
+    await client.getCardsForList("list-1", { includeAttachments: false });
+
+    const [url] = firstFetchCall(fetchImpl);
+    expect(new URL(String(url)).searchParams.get("fields")?.split(",")).toContain("labels");
+  });
+});

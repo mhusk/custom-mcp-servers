@@ -98,8 +98,13 @@ export class WriteService {
   }
 
   async addLabel(cardId: string, labelId: string): Promise<NormalizedCard> {
-    await this.assertCardOnConfiguredBoard(cardId);
+    const card = await this.getCardOnConfiguredBoard(cardId);
     await this.assertLabelOnConfiguredBoard(labelId);
+
+    if (card.labels?.some((label) => label.id === labelId)) {
+      return this.cardService.getCardDetails(cardId);
+    }
+
     await this.client.addCardLabel(cardId, labelId);
     const refreshedCard = await this.cardService.getCardDetails(cardId);
 
@@ -113,9 +118,22 @@ export class WriteService {
   }
 
   async removeLabel(cardId: string, labelId: string): Promise<NormalizedCard> {
-    await this.assertCardOnConfiguredBoard(cardId);
+    const card = await this.getCardOnConfiguredBoard(cardId);
+
+    if (!card.labels?.some((label) => label.id === labelId)) {
+      return this.cardService.getCardDetails(cardId);
+    }
+
     await this.client.removeCardLabel(cardId, labelId);
-    return this.cardService.getCardDetails(cardId);
+    const refreshedCard = await this.cardService.getCardDetails(cardId);
+
+    if (refreshedCard.labels.some((label) => label.id === labelId)) {
+      throw new MutationVerificationError(
+        "Trello reported success, but the requested label was still present on the refreshed card."
+      );
+    }
+
+    return refreshedCard;
   }
 
   private async assertCardOnConfiguredBoard(cardId: string): Promise<void> {

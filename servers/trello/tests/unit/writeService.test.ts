@@ -104,6 +104,28 @@ describe("WriteService board guard", () => {
     expect(cardService.getCardDetails).toHaveBeenCalledWith("card-1");
   });
 
+  it("treats adding an existing label as a no-op", async () => {
+    const { client, service } = makeService({
+      ...baseCard,
+      labels: [{ id: "label-1", name: "AI Reviewed", color: "blue" }]
+    });
+
+    await expect(service.addLabel("card-1", "label-1")).resolves.toEqual(refreshedCard);
+    expect(client.addCardLabel).not.toHaveBeenCalled();
+  });
+
+  it("removes an existing label and returns the updated label list", async () => {
+    const { client, cardService, service } = makeService({
+      ...baseCard,
+      labels: [{ id: "label-1", name: "AI Reviewed", color: "blue" }]
+    });
+    const cardWithoutLabel = { ...refreshedCard, labels: [] };
+    cardService.getCardDetails.mockResolvedValueOnce(cardWithoutLabel);
+
+    await expect(service.removeLabel("card-1", "label-1")).resolves.toEqual(cardWithoutLabel);
+    expect(client.removeCardLabel).toHaveBeenCalledWith("card-1", "label-1");
+  });
+
   it("rejects label IDs that do not belong to the configured board", async () => {
     const { client, cardService, service } = makeService();
 

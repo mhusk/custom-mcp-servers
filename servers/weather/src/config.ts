@@ -13,7 +13,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .url()
       .safeParse(value ?? fallback);
     if (!parsed.success) throw new Error("Open-Meteo base URL must be a valid URL");
-    return parsed.data.replace(/\/$/, "");
+    return parsed.data.replace(/\/+$/, "");
   };
   const timeout = timeoutSchema.safeParse(env.OPEN_METEO_TIMEOUT_MS ?? "10000");
   if (!timeout.success)

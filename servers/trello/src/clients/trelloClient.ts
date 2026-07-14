@@ -198,7 +198,7 @@ export class TrelloClient {
         throw error;
       }
 
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (isAbortError(error)) {
         throw new TrelloApiError("Trello API request timed out.", "TRELLO_TIMEOUT");
       }
 
@@ -291,4 +291,11 @@ async function parseJsonResponse(response: Response): Promise<unknown> {
   } catch {
     throw new TrelloApiError("Trello API returned malformed JSON.", "TRELLO_INVALID_RESPONSE", 502);
   }
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error instanceof Error && error.name === "AbortError")
+  );
 }

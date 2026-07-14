@@ -58,6 +58,15 @@ describe("TrelloClient API error mapping", () => {
       statusCode: 502
     });
   });
+
+  it("maps plain abort errors to timeouts", async () => {
+    const abortError = new Error("aborted");
+    abortError.name = "AbortError";
+
+    await expect(
+      clientWithFetch(vi.fn(async () => Promise.reject(abortError))).getBoard("board")
+    ).rejects.toMatchObject({ code: "TRELLO_TIMEOUT" });
+  });
 });
 
 describe("TrelloClient write requests", () => {

@@ -15,11 +15,13 @@ describe("loadConfig", () => {
       TRELLO_MAIN_BOARD_ID: "board"
     });
 
-    expect(config).toEqual({
+    expect(config).toMatchObject({
       trelloApiKey: "key",
       trelloToken: "token",
       trelloMainBoardId: "board",
-      trelloApiBaseUrl: "https://api.trello.com/1"
+      trelloApiBaseUrl: "https://api.trello.com/1",
+      boardRegistry: { main: { id: "board", name: "Main board" } },
+      allowedBoardIds: ["board"]
     });
   });
 

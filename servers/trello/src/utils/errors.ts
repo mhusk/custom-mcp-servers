@@ -30,6 +30,13 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class AccessDeniedError extends AppError {
+  constructor(message: string) {
+    super(message, "TRELLO_BOARD_ACCESS_DENIED", 403);
+    this.name = "AccessDeniedError";
+  }
+}
+
 export class MutationVerificationError extends AppError {
   constructor(message: string) {
     super(message, "TRELLO_MUTATION_NOT_APPLIED", 502);

@@ -4,13 +4,20 @@ import { z } from "zod";
 import type { CardService } from "../services/cardService.js";
 import { safeTool } from "./result.js";
 
-const getCardsInListSchema = z.object({
-  listName: z.string().trim().min(1),
-  includeComments: z.boolean().default(false),
-  includeAttachments: z.boolean().default(true)
-});
+const getCardsInListSchema = z
+  .object({
+    board: z.string().trim().min(1).default("main"),
+    listId: z.string().trim().min(1).optional(),
+    listName: z.string().trim().min(1).optional(),
+    includeComments: z.boolean().default(false),
+    includeAttachments: z.boolean().default(true)
+  })
+  .refine((value) => Boolean(value.listId) !== Boolean(value.listName), {
+    message: "Provide exactly one of listId or listName."
+  });
 
 const getCardDetailsSchema = z.object({
+  board: z.string().trim().min(1).default("main"),
   cardId: z.string().trim().min(1),
   includeComments: z.boolean().default(true),
   includeAttachments: z.boolean().default(true)
@@ -23,12 +30,22 @@ export function registerCardTools(server: McpServer, cardService: CardService): 
       title: "Get cards in Trello list",
       description:
         "Read-only. Returns all open cards in one named list on the configured board using the normalized card model. Includes descriptions, due dates, labels, checklists, checklist item due dates, custom fields, and optionally comments and attachments.",
-      inputSchema: getCardsInListSchema.shape
+      inputSchema: {
+        board: z.string().trim().min(1).default("main"),
+        listId: z.string().trim().min(1).optional(),
+        listName: z.string().trim().min(1).optional(),
+        includeComments: z.boolean().default(false),
+        includeAttachments: z.boolean().default(true)
+      }
     },
     async (input) =>
       safeTool(async () => {
         const args = getCardsInListSchema.parse(input);
-        return cardService.getCardsInList(args.listName, args);
+        return cardService.getCardsInList(
+          { listId: args.listId, listName: args.listName },
+          args,
+          args.board
+        );
       })
   );
 
@@ -37,13 +54,13 @@ export function registerCardTools(server: McpServer, cardService: CardService): 
     {
       title: "Get Trello card details",
       description:
-        "Read-only. Returns the full normalized card for deeper inspection after reviewing the work queue. This tool validates that the card belongs to the configured main board and will not retrieve arbitrary cards from other Trello boards.",
+        "Read-only. Returns a normalized card only after validating it belongs to the selected allowlisted board. The board defaults to main; arbitrary cards from other boards are rejected.",
       inputSchema: getCardDetailsSchema.shape
     },
     async (input) =>
       safeTool(async () => {
         const args = getCardDetailsSchema.parse(input);
-        return cardService.getCardDetails(args.cardId, args);
+        return cardService.getCardDetails(args.cardId, args, args.board);
       })
   );
 }

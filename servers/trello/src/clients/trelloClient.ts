@@ -103,6 +103,42 @@ export class TrelloClient {
     );
   }
 
+  async createList(boardId: string, name: string, position?: string | number): Promise<TrelloList> {
+    return this.request<TrelloList>(
+      "/lists",
+      { idBoard: boardId, name, pos: position },
+      { method: "POST" }
+    );
+  }
+
+  async createCard(input: {
+    listId: string;
+    name: string;
+    description: string;
+    due?: string;
+    labelIds?: string[];
+  }): Promise<TrelloCard> {
+    return this.request<TrelloCard>(
+      "/cards",
+      {
+        idList: input.listId,
+        name: input.name,
+        desc: input.description,
+        due: input.due,
+        idLabels: input.labelIds?.join(",")
+      },
+      { method: "POST" }
+    );
+  }
+
+  async moveCard(cardId: string, destinationListId: string): Promise<TrelloCard> {
+    return this.request<TrelloCard>(
+      `/cards/${encodeURIComponent(cardId)}`,
+      { idList: destinationListId },
+      { method: "PUT" }
+    );
+  }
+
   async createCardChecklist(cardId: string, name: string): Promise<TrelloChecklist> {
     return this.request<TrelloChecklist>(
       `/cards/${encodeURIComponent(cardId)}/checklists`,

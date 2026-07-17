@@ -19,15 +19,19 @@ export class CardService {
   constructor(
     private readonly client: TrelloClient,
     private readonly boardService: BoardService,
-    private readonly boardId: string
+    private readonly legacyBoardId?: string
   ) {}
 
   async getCardsInList(
-    listName: string,
-    options: CardFetchOptions = {}
+    selector: string | { listId?: string; listName?: string },
+    options: CardFetchOptions = {},
+    board: string = "main"
   ): Promise<NormalizedCard[]> {
-    const list = await this.boardService.getListByName(listName);
-    const definitions = await this.boardService.getCustomFieldDefinitions();
+    const list =
+      typeof selector === "string"
+        ? await this.boardService.getListByName(selector, board)
+        : await this.boardService.getList(selector, board);
+    const definitions = await this.boardService.getCustomFieldDefinitions(board);
     const cards = await this.client.getCardsForList(list.id, {
       includeAttachments: options.includeAttachments ?? true
     });
@@ -38,18 +42,23 @@ export class CardService {
     );
   }
 
-  async getCardDetails(cardId: string, options: CardFetchOptions = {}): Promise<NormalizedCard> {
+  async getCardDetails(
+    cardId: string,
+    options: CardFetchOptions = {},
+    board: string = "main"
+  ): Promise<NormalizedCard> {
     const includeAttachments = options.includeAttachments ?? true;
     const includeComments = options.includeComments ?? true;
+    const boardId = this.legacyBoardId ?? this.boardService.resolveBoard(board).id;
     const [card, lists, definitions] = await Promise.all([
       this.client.getCard(cardId, { includeAttachments }),
-      this.boardService.getLists(),
-      this.boardService.getCustomFieldDefinitions()
+      this.boardService.getLists(board),
+      this.boardService.getCustomFieldDefinitions(board)
     ]);
 
-    if (card.idBoard !== this.boardId) {
+    if (card.idBoard !== boardId) {
       throw new NotFoundError(
-        "The requested Trello card does not belong to the configured main board.",
+        "The requested Trello card does not belong to the selected allowlisted board.",
         "TRELLO_CARD_WRONG_BOARD"
       );
     }
@@ -68,10 +77,11 @@ export class CardService {
 
   async getCardsFromLists(
     listNames: string[],
-    options: CardFetchOptions = {}
+    options: CardFetchOptions = {},
+    board: string = "main"
   ): Promise<NormalizedCard[]> {
     const nested = await Promise.all(
-      listNames.map((listName) => this.getCardsInList(listName, options))
+      listNames.map((listName) => this.getCardsInList(listName, options, board))
     );
     return nested.flat();
   }

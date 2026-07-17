@@ -99,9 +99,15 @@ describe("WriteService board guard", () => {
   it("returns the refreshed normalized card after a mutation", async () => {
     const { client, cardService, service } = makeService();
 
-    await expect(service.addLabel("card-1", "label-1")).resolves.toEqual(refreshedCard);
+    await expect(service.addLabel("card-1", "label-1")).resolves.toMatchObject({
+      boardId: "main-board",
+      listId: "list-1",
+      cardId: "card-1",
+      url: "https://example.com",
+      card: refreshedCard
+    });
     expect(client.addCardLabel).toHaveBeenCalledWith("card-1", "label-1");
-    expect(cardService.getCardDetails).toHaveBeenCalledWith("card-1");
+    expect(cardService.getCardDetails).toHaveBeenCalledWith("card-1", {}, "main");
   });
 
   it("treats adding an existing label as a no-op", async () => {
@@ -110,7 +116,9 @@ describe("WriteService board guard", () => {
       labels: [{ id: "label-1", name: "AI Reviewed", color: "blue" }]
     });
 
-    await expect(service.addLabel("card-1", "label-1")).resolves.toEqual(refreshedCard);
+    await expect(service.addLabel("card-1", "label-1")).resolves.toMatchObject({
+      card: refreshedCard
+    });
     expect(client.addCardLabel).not.toHaveBeenCalled();
   });
 
@@ -122,7 +130,9 @@ describe("WriteService board guard", () => {
     const cardWithoutLabel = { ...refreshedCard, labels: [] };
     cardService.getCardDetails.mockResolvedValueOnce(cardWithoutLabel);
 
-    await expect(service.removeLabel("card-1", "label-1")).resolves.toEqual(cardWithoutLabel);
+    await expect(service.removeLabel("card-1", "label-1")).resolves.toMatchObject({
+      card: cardWithoutLabel
+    });
     expect(client.removeCardLabel).toHaveBeenCalledWith("card-1", "label-1");
   });
 
@@ -151,7 +161,9 @@ describe("WriteService board guard", () => {
     };
     cardService.getCardDetails.mockResolvedValueOnce(cardWithChecklist);
 
-    await expect(service.createChecklist("card-1", "Steps")).resolves.toEqual(cardWithChecklist);
+    await expect(service.createChecklist("card-1", "Steps")).resolves.toMatchObject({
+      card: cardWithChecklist
+    });
     expect(client.createCardChecklist).toHaveBeenCalledWith("card-1", "Steps");
   });
 
@@ -179,9 +191,11 @@ describe("WriteService board guard", () => {
     };
     cardService.getCardDetails.mockResolvedValueOnce(cardWithItem);
 
-    await expect(service.addChecklistItem("card-1", "checklist-1", "First step")).resolves.toEqual(
-      cardWithItem
-    );
+    await expect(
+      service.addChecklistItem("card-1", "checklist-1", "First step")
+    ).resolves.toMatchObject({
+      card: cardWithItem
+    });
     expect(client.addChecklistItem).toHaveBeenCalledWith("checklist-1", "First step");
   });
 

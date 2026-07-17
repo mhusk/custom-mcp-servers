@@ -5,3 +5,5 @@ coverage/
 .env.*
 !.env.example
 npm-debug.log*
+board-registry.json
+.trello-promotion-idempotency.json

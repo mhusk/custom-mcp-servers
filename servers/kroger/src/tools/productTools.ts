@@ -5,19 +5,20 @@ import type { KrogerService } from "../services/krogerService.js";
 import { safeTool } from "./result.js";
 
 const nonEmpty = z.string().trim().min(1);
+const limitString = (max: number) => z.string().trim().min(1).max(max);
 
 export const searchProductsSchema = z.object({
-  term: nonEmpty,
-  locationId: nonEmpty.optional(),
-  brand: nonEmpty.optional(),
-  fulfillment: z.array(nonEmpty).min(1).optional(),
+  term: limitString(200),
+  locationId: limitString(50).optional(),
+  brand: limitString(100).optional(),
+  fulfillment: z.array(limitString(50)).min(1).optional(),
   start: z.number().int().nonnegative().optional(),
   limit: z.number().int().positive().optional()
 });
 
 export const getProductSchema = z.object({
-  id: nonEmpty,
-  locationId: nonEmpty.optional()
+  id: limitString(50),
+  locationId: limitString(50).optional()
 });
 
 export function registerProductTools(server: McpServer, service: KrogerService): void {

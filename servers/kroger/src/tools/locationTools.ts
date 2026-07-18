@@ -5,16 +5,17 @@ import type { KrogerService } from "../services/krogerService.js";
 import { safeTool } from "./result.js";
 
 const nonEmpty = z.string().trim().min(1);
+const limitString = (max: number) => z.string().trim().min(1).max(max);
 
 const searchLocationsShape = {
-  zipCode: nonEmpty.optional(),
-  latLong: nonEmpty.optional(),
-  latitude: nonEmpty.optional(),
-  longitude: nonEmpty.optional(),
+  zipCode: limitString(10).optional(),
+  latLong: limitString(50).optional(),
+  latitude: limitString(20).optional(),
+  longitude: limitString(20).optional(),
   radiusInMiles: z.number().positive().optional(),
   limit: z.number().int().positive().optional(),
-  chain: nonEmpty.optional(),
-  departments: z.array(nonEmpty).min(1).optional()
+  chain: limitString(100).optional(),
+  departments: z.array(limitString(100)).min(1).optional()
 };
 
 export const searchLocationsSchema = z
@@ -34,7 +35,7 @@ export const searchLocationsSchema = z
     }
   });
 
-export const getLocationSchema = z.object({ locationId: nonEmpty });
+export const getLocationSchema = z.object({ locationId: limitString(50) });
 
 export function registerLocationTools(server: McpServer, service: KrogerService): void {
   server.registerTool(

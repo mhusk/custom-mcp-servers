@@ -8,22 +8,22 @@ import { isDueSoon, isOverdue } from "../services/cardService.js";
 import { safeTool } from "./result.js";
 
 const searchCardsSchema = z.object({
-  query: z.string().trim().min(1),
-  lists: z.array(z.string().trim().min(1)).default(["Back-Log", "To-Do", "Blocked", "Done"]),
+  query: z.string().trim().min(1).max(200),
+  lists: z.array(z.string().trim().min(1).max(100)).default(["Back-Log", "To-Do", "Blocked", "Done"]),
   limit: z.number().int().min(1).max(100).default(20)
 });
 
 const getDueSoonSchema = z.object({
   days: z.number().int().min(0).max(365).default(7),
-  lists: z.array(z.string().trim().min(1)).default(["Back-Log", "To-Do"])
+  lists: z.array(z.string().trim().min(1).max(100)).default(["Back-Log", "To-Do"])
 });
 
 const getOverdueCardsSchema = z.object({
-  lists: z.array(z.string().trim().min(1)).default(["Back-Log", "To-Do", "Blocked"])
+  lists: z.array(z.string().trim().min(1).max(100)).default(["Back-Log", "To-Do", "Blocked"])
 });
 
 const findUnderdefinedCardsSchema = z.object({
-  lists: z.array(z.string().trim().min(1)).default(["Back-Log", "To-Do"]),
+  lists: z.array(z.string().trim().min(1).max(100)).default(["Back-Log", "To-Do"]),
   minimumDescriptionLength: z.number().int().min(0).max(1000).default(40)
 });
 

@@ -8,9 +8,9 @@ export const addToCartSchema = z.object({
   items: z
     .array(
       z.object({
-        upc: z.string().trim().regex(/^\d+$/, "UPC must contain digits only."),
+        upc: z.string().trim().regex(/^\d+$/, "UPC must contain digits only.").max(20),
         quantity: z.number().int().positive(),
-        modality: z.string().trim().min(1)
+        modality: z.string().trim().min(1).max(50)
       })
     )
     .min(1)

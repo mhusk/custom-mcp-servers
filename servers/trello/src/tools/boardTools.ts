@@ -4,7 +4,7 @@ import type { BoardService } from "../services/boardService.js";
 import { safeTool } from "./result.js";
 import { z } from "zod";
 
-const boardSchema = z.string().trim().min(1).default("main");
+const boardSchema = z.string().trim().min(1).max(50).default("main");
 
 export function registerBoardTools(server: McpServer, boardService: BoardService): void {
   server.registerTool(

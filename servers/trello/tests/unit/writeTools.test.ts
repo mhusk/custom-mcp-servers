@@ -7,7 +7,9 @@ import {
   createCardChecklistSchema,
   removeCardLabelSchema,
   updateCardCustomFieldSchema,
-  updateCardDescriptionSchema
+  updateCardDescriptionSchema,
+  createListSchema,
+  createCardSchema
 } from "../../src/tools/writeTools.js";
 
 describe("write tool schemas", () => {
@@ -76,5 +78,14 @@ describe("write tool schemas", () => {
   it("rejects empty label IDs", () => {
     expect(() => addCardLabelSchema.parse({ cardId: "card-1", labelId: "" })).toThrow();
     expect(() => removeCardLabelSchema.parse({ cardId: "card-1", labelId: "" })).toThrow();
+  });
+
+  it("rejects excessively long inputs", () => {
+    expect(() => addCardCommentSchema.parse({ cardId: "card-1", text: "a".repeat(16385) })).toThrow();
+    expect(() => addCardCommentSchema.parse({ cardId: "c".repeat(51), text: "Hello" })).toThrow();
+    expect(() => createCardChecklistSchema.parse({ cardId: "card-1", name: "a".repeat(501) })).toThrow();
+    expect(() => updateCardDescriptionSchema.parse({ cardId: "card-1", description: "a".repeat(16385) })).toThrow();
+    expect(() => createListSchema.parse({ board: "staging", name: "a".repeat(101) })).toThrow();
+    expect(() => createCardSchema.parse({ board: "staging", listName: "a", name: "a".repeat(501), description: "desc" })).toThrow();
   });
 });

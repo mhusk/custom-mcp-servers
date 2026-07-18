@@ -4,37 +4,37 @@ import { z } from "zod";
 import type { WriteService } from "../services/writeService.js";
 import { safeTool } from "./result.js";
 
-const idSchema = z.string().trim().min(1);
-const boardSchema = z.string().trim().min(1).default("main");
+const idSchema = z.string().trim().min(1).max(50);
+const boardSchema = z.string().trim().min(1).max(50).default("main");
 const boardField = { board: boardSchema };
 
 export const addCardCommentSchema = z.object({
   ...boardField,
   cardId: idSchema,
-  text: z.string().trim().min(1)
+  text: z.string().trim().min(1).max(16384)
 });
 
 export const createCardChecklistSchema = z.object({
   ...boardField,
   cardId: idSchema,
-  name: z.string().trim().min(1)
+  name: z.string().trim().min(1).max(500)
 });
 
 export const addChecklistItemSchema = z.object({
   ...boardField,
   cardId: idSchema,
   checklistId: idSchema,
-  name: z.string().trim().min(1)
+  name: z.string().trim().min(1).max(500)
 });
 
 export const updateCardDescriptionSchema = z.object({
   ...boardField,
   cardId: idSchema,
-  description: z.string()
+  description: z.string().max(16384)
 });
 
 export const customFieldValueSchema = z.union([
-  z.string(),
+  z.string().max(1000),
   z.number(),
   z.boolean(),
   z.null(),
@@ -64,18 +64,18 @@ export const removeCardLabelSchema = z.object({
 
 export const createListSchema = z.object({
   board: z.literal("staging"),
-  name: z.string().trim().min(1),
+  name: z.string().trim().min(1).max(100),
   position: z.union([z.number(), z.enum(["top", "bottom"])]).optional()
 });
 
 const createCardBaseSchema = z.object({
   board: z.literal("staging"),
   listId: idSchema.optional(),
-  listName: z.string().trim().min(1).optional(),
-  name: z.string().trim().min(1),
-  description: z.string(),
+  listName: z.string().trim().min(1).max(100).optional(),
+  name: z.string().trim().min(1).max(500),
+  description: z.string().max(16384),
   due: z.string().datetime().optional(),
-  labels: z.array(z.string().trim().min(1)).optional(),
+  labels: z.array(z.string().trim().min(1).max(50)).optional(),
   customFields: z.record(idSchema, customFieldValueSchema).optional()
 });
 export const createCardSchema = createCardBaseSchema.refine(

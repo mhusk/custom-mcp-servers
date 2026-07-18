@@ -4,21 +4,24 @@ import { z } from "zod";
 import type { CardService } from "../services/cardService.js";
 import { safeTool } from "./result.js";
 
-const getCardsInListSchema = z
-  .object({
-    board: z.string().trim().min(1).default("main"),
-    listId: z.string().trim().min(1).optional(),
-    listName: z.string().trim().min(1).optional(),
-    includeComments: z.boolean().default(false),
-    includeAttachments: z.boolean().default(true)
-  })
-  .refine((value) => Boolean(value.listId) !== Boolean(value.listName), {
+const getCardsInListBaseSchema = z.object({
+  board: z.string().trim().min(1).max(50).default("main"),
+  listId: z.string().trim().min(1).max(50).optional(),
+  listName: z.string().trim().min(1).max(100).optional(),
+  includeComments: z.boolean().default(false),
+  includeAttachments: z.boolean().default(true)
+});
+
+const getCardsInListSchema = getCardsInListBaseSchema.refine(
+  (value) => Boolean(value.listId) !== Boolean(value.listName),
+  {
     message: "Provide exactly one of listId or listName."
-  });
+  }
+);
 
 const getCardDetailsSchema = z.object({
-  board: z.string().trim().min(1).default("main"),
-  cardId: z.string().trim().min(1),
+  board: z.string().trim().min(1).max(50).default("main"),
+  cardId: z.string().trim().min(1).max(50),
   includeComments: z.boolean().default(true),
   includeAttachments: z.boolean().default(true)
 });
@@ -30,13 +33,7 @@ export function registerCardTools(server: McpServer, cardService: CardService): 
       title: "Get cards in Trello list",
       description:
         "Read-only. Returns all open cards in one named list on the configured board using the normalized card model. Includes descriptions, due dates, labels, checklists, checklist item due dates, custom fields, and optionally comments and attachments.",
-      inputSchema: {
-        board: z.string().trim().min(1).default("main"),
-        listId: z.string().trim().min(1).optional(),
-        listName: z.string().trim().min(1).optional(),
-        includeComments: z.boolean().default(false),
-        includeAttachments: z.boolean().default(true)
-      }
+      inputSchema: getCardsInListBaseSchema.shape
     },
     async (input) =>
       safeTool(async () => {

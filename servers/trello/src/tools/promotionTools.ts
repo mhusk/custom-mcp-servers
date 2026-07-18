@@ -5,9 +5,9 @@ import type { PromotionService } from "../services/promotionService.js";
 import { safeTool } from "./result.js";
 
 export const promoteStagingTaskSchema = z.object({
-  stagingCardId: z.string().trim().min(1),
+  stagingCardId: z.string().trim().min(1).max(50),
   destinationBoard: z.literal("main"),
-  destinationListId: z.string().trim().min(1),
+  destinationListId: z.string().trim().min(1).max(50),
   idempotencyKey: z.string().trim().min(1).max(200)
 });
 

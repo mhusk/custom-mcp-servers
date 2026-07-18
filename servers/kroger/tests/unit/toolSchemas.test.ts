@@ -18,6 +18,11 @@ describe("location tool schema", () => {
     expect(() => searchLocationsSchema.parse({ zipCode: "48201", latLong: "42,-83" })).toThrow();
     expect(() => searchLocationsSchema.parse({ latitude: "42.3" })).toThrow();
   });
+
+  it("rejects excessively long inputs", () => {
+    expect(() => searchLocationsSchema.parse({ zipCode: "4".repeat(11) })).toThrow();
+    expect(() => searchLocationsSchema.parse({ latLong: "4".repeat(51) })).toThrow();
+  });
 });
 
 describe("product and cart tool schemas", () => {
@@ -37,6 +42,20 @@ describe("product and cart tool schemas", () => {
     ).toThrow();
     expect(() =>
       addToCartSchema.parse({ items: [{ upc: "12A", quantity: 1, modality: "PICKUP" }] })
+    ).toThrow();
+  });
+
+  it("rejects excessively long inputs", () => {
+    expect(() => searchProductsSchema.parse({ term: "a".repeat(201) })).toThrow();
+    expect(() =>
+      addToCartSchema.parse({
+        items: [{ upc: "1".repeat(21), quantity: 1, modality: "PICKUP" }]
+      })
+    ).toThrow();
+    expect(() =>
+      addToCartSchema.parse({
+        items: [{ upc: "12345", quantity: 1, modality: "a".repeat(51) }]
+      })
     ).toThrow();
   });
 });
